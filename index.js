@@ -6,6 +6,7 @@ const logger = require("morgan");
 const path = require("path");
 const { createServer } = require("http");
 const { auth, requiresAuth } = require("express-openid-connect");
+const axios = require("axios").default;
 
 const {
   checkUrl,
@@ -52,25 +53,17 @@ app.use(
  })
 );
 
-const expenses = [
-  {
-    date: new Date(),
-    description: "Pizza for a Coding Dojo session.",
-    value: 102,
-  },
-  {
-    date: new Date(),
-    description: "Coffee for a Coding Dojo session.",
-    value: 42,
-  },
-];
-
-app.get("/", async (req, res) => {
+app.get("/", async (req, res, next) => {
+ try {
+  const summary = await axios.get(`${API_URL}/total`);
   res.render("home", {
-    user: req.oidc && req.oidc.user,
-    total: expenses.reduce((accum, expense) => accum + expense.value, 0),
-    count: expenses.length,
+   user: req.oidc && req.oidc.user,
+   total: summary.data.total,
+   count: summary.data.count,
   });
+} catch (err) {
+  next(err);
+}
 });
 
 // 👇 add requiresAuth middlware to these private routes  👇
